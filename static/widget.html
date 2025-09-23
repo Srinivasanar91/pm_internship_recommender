@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PM Internship Recommender — Widget</title>
+<style>
+:root{
+  --primary:#0ea5a4; --primary-dark:#0c8685; --secondary:#2563eb; --secondary-dark:#1d4ed8;
+  --danger:#ef4444; --bg:#f9fafb; --card-bg:#ffffff; --text-dark:#0f172a; --text-muted:#475569;
+  --radius:12px; --shadow:0 4px 12px rgba(0,0,0,0.05); --shadow-hover:0 6px 18px rgba(0,0,0,0.08);
+  font-family:system-ui, "Segoe UI", Roboto, Noto Sans, Arial;
+}
+body{margin:0;padding:12px;background:var(--bg);color:var(--text-dark)}
+.container{max-width:920px;margin:0 auto;padding-bottom:50px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;background:linear-gradient(90deg,var(--primary),var(--secondary));color:white;border-radius:var(--radius);box-shadow:var(--shadow)}
+h1{font-size:1.3rem;margin:0}
+.sub{font-size:0.95rem;opacity:0.95}
+.lang-row{display:flex;gap:8px;align-items:center}
+.lang-select{padding:8px 12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-weight:600}
+main{margin-top:16px}
+.tabs{display:flex;gap:10px;margin-bottom:12px}
+.tab-btn{flex:1;padding:12px;border-radius:12px;border:none;background:#e2e8f0;cursor:pointer;font-weight:700}
+.tab-btn.active{background:var(--primary);color:white;box-shadow:var(--shadow)}
+.form-section{background:var(--card-bg);padding:18px;border-radius:var(--radius);box-shadow:var(--shadow)}
+.grid{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+label{display:flex;flex-direction:column;gap:6px;font-size:0.95rem;color:var(--text-dark);flex:1 1 45%}
+input[type=text], input[type=number], select, textarea, input[type=date]{padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;font-size:0.95rem;background:#f9fafb;transition:border .2s,box-shadow .2s;min-width:160px}
+input:focus, select:focus, textarea:focus, input[type=date]:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(14,165,164,0.15);outline:none}
+textarea{min-height:70px;resize:vertical}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{padding:12px 16px;border-radius:12px;border:none;background:var(--primary);color:white;font-weight:700;font-size:1rem;cursor:pointer}
+.btn-secondary{background:#64748b}
+.card{background:var(--card-bg);padding:16px;border-radius:var(--radius);margin-top:14px;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover)}
+.title{font-weight:800;font-size:1.05rem}
+.meta{color:var(--text-muted);font-size:0.9rem;margin-top:6px}
+.badge{display:inline-block;padding:6px 10px;border-radius:20px;font-weight:700;margin-top:10px;font-size:0.8rem}
+.strong{background:#ecfdf5;color:#065f46;border:1px solid #bbf7d0}
+.medium{background:#fff7ed;color:#92400e;border:1px solid #fcd34d}
+.weak{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.why{margin-top:10px;background:#f1f5f9;padding:10px;border-radius:10px;color:var(--text-dark)}
+.apply-row{display:flex;gap:10px;align-items:center;margin-top:12px}
+.apply-btn{background:var(--secondary);color:white;padding:10px 14px;border-radius:12px;border:0;font-weight:700;cursor:pointer}
+.apply-btn:hover{background:var(--secondary-dark)}
+.apply-btn[disabled]{background:#94a3b8;cursor:not-allowed}
+.applied-ribbon{position:absolute;right:12px;top:12px;background:#065f46;color:#fff;padding:6px 10px;border-radius:10px;font-weight:700;font-size:0.85rem;box-shadow:0 6px 12px rgba(0,0,0,0.12)}
+.sr-only{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+.field-error{border-color:#ef4444!important;box-shadow:0 0 0 3px rgba(239,68,68,0.08)}
+.error-text{color:#b91c1c;font-size:0.85rem;margin-top:6px;display:block}
+#dobInfo{background:#f1f5f9;color:var(--text-muted);padding:6px 10px;border-radius:20px;font-size:0.85rem;font-weight:600;white-space:nowrap}
+#dobInfo:not(:empty){background:#ecfdf5;color:#065f46;border:1px solid #bbf7d0}
+#pm_toast{position:fixed;right:16px;bottom:24px;z-index:9999;background:#0f172a;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.2);opacity:0;transition:opacity .2s}
+@media (max-width:640px){.grid{flex-direction:column}.row{flex-direction:column}header{flex-direction:column;align-items:flex-start;gap:6px}.tabs{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="container" role="main">
+  <header aria-label="Header">
+    <div>
+      <h1 id="appTitle">PM Internship Recommender</h1>
+      <div id="appSub" class="sub">Get 3–5 internships matched to your profile</div>
+    </div>
+    <div class="lang-row" aria-label="Language selector">
+      <label for="langSelect" class="sub" id="langLabel">Select language</label>
+      <select id="langSelect" class="lang-select" aria-label="Select language"></select>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="register" id="tab-register">Register</button>
+      <button class="tab-btn" data-tab="recommend" id="tab-recommend">Recommendations</button>
+      <button class="tab-btn" data-tab="apps" id="tab-apps">My Applications</button>
+    </div>
+
+    <section id="panel-register" class="form-section" aria-labelledby="tab-register">
+      <h2 id="profileHeading">Register / Profile</h2>
+      <form id="profileForm" autocomplete="off">
+        <div class="grid" role="group" aria-label="Profile fields">
+          <label><span class="label-text">Full name</span><input id="name" type="text" required placeholder="e.g., Ramesh"/></label>
+          <label><span class="label-text">Gender</span>
+            <select id="gender"><option value="">--</option><option>Male</option><option>Female</option><option>Other</option></select></label>
+
+          <label>
+            <span class="label-text">Date of birth</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="dob" type="date" placeholder="YYYY-MM-DD" aria-label="Date of birth" />
+              <div id="dobInfo" aria-hidden="true"></div>
+            </div>
+          </label>
+
+          <label><span class="label-text">Father's name</span><input id="father_name" type="text" /></label>
+          <label><span class="label-text">Mother's name</span><input id="mother_name" type="text" /></label>
+
+          <label><span class="label-text">Category</span>
+            <select id="category"><option value="">--</option><option>General</option><option>OBC</option><option>SC</option><option>ST</option></select></label>
+          <label><span class="label-text">Differently abled?</span>
+            <select id="pwd"><option value="0">No</option><option value="1">Yes</option></select></label>
+
+          <label style="flex-basis:100%"><span class="label-text">Permanent address</span><input id="permanent_address" type="text" placeholder="Village / City, District, State"/></label>
+          <label style="flex-basis:100%"><span class="label-text">Current address</span><input id="current_address" type="text" placeholder="City, State"/></label>
+          <label><span class="label-text">Mobile</span><input id="mobile" type="text" /></label>
+          <label><span class="label-text">Email</span><input id="email" type="text" /></label>
+
+          <label><span class="label-text">Qualification</span><input id="qualification" type="text" placeholder="e.g., B.Sc"/></label>
+          <label><span class="label-text">Course / Stream</span><input id="course" type="text" placeholder="e.g., Computer Science"/></label>
+          <label><span class="label-text">Specialization</span><input id="specialization" type="text" /></label>
+          <label><span class="label-text">University</span><input id="university" type="text" /></label>
+          <label><span class="label-text">Year of passing</span><input id="year_of_passing" type="number" /></label>
+          <label><span class="label-text">CGPA / Grade / Percentage</span><input id="cgpa" type="text" placeholder="7.8 or 68%"/></label>
+
+          <label style="flex-basis:100%"><span class="label-text">Skills (comma separated)</span><input id="skills" type="text" placeholder="C, Python, SQL"/></label>
+          <label><span class="label-text">Languages (comma separated)</span><input id="languages" type="text" placeholder="Tamil, English"/></label>
+          <label style="flex-basis:100%"><span class="label-text">Interests (comma separated)</span><input id="interests" type="text" placeholder="e.g., IT, Data, Marketing, NGO" /></label>
+
+          <label style="flex-basis:100%"><span class="label-text">Past experience (short)</span><input id="past_experience" type="text" placeholder="e.g., Teaching Assistant"/></label>
+          <label style="flex-basis:100%"><span class="label-text">Certifications</span><input id="certifications" type="text" placeholder="NPTEL, Coursera"/></label>
+          <label style="flex-basis:100%"><span class="label-text">Hobbies</span><input id="hobbies" type="text" placeholder="Reading, Cricket"/></label>
+        </div>
+
+        <div class="row" style="margin-top:12px">
+          <button id="registerBtn" class="btn" type="submit" aria-label="Register and get recommendations">Register & Get Recommendations</button>
+          <button id="clearProfile" type="button" class="btn btn-secondary" aria-label="Clear the form">Clear</button>
+          <button id="forgetBtn" type="button" class="btn btn-secondary" style="background:#ef4444" aria-label="Forget me">Forget me</button>
+        </div>
+        <div style="margin-top:8px"><small class="note">We store your details locally for demo only.</small></div>
+      </form>
+    </section>
+
+    <div id="panel-recommend" style="display:none">
+      <div id="out" aria-live="polite"></div>
+    </div>
+
+    <div id="panel-apps" style="display:none">
+      <div id="appsOut" aria-live="polite"></div>
+    </div>
+
+    <div id="statusAnnounce" class="sr-only" aria-live="polite"></div>
+  </main>
+</div>
+
+<div id="pm_toast" aria-live="polite"></div>
+
+<script>
+/* -----------------------
+   Translations (EN/TA/HI minimal)
+   ----------------------- */
+const STR = {
+  en: {
+    apply: "Apply", applied: "Applied ✓", myApplications: "My Applications",
+    registerBtn: "Register & Get Recommendations", forgetBtn: "Forget me",
+    noRecs: "No recommendations found", registering: "Registering and fetching recommendations…",
+    loadingApps: "Loading applications…", err_name_required: "Please enter your full name",
+    err_invalid_email: "Please enter a valid email (example@domain.com)",
+    err_invalid_mobile: "Please enter a valid mobile — digits only, 7–15 digits",
+    err_invalid_cgpa: "Enter numeric CGPA or percentage (e.g., 7.8 or 89%)",
+    err_invalid_year: "Enter a valid year of passing", err_invalid_dob: "Date of birth cannot be in the future",
+    sending: "Sending…", apply_success: "Application recorded", err_need_register: "Register first to apply"
+  },
+  ta: {
+    apply: "விண்ணப்பிக்க", applied: "விண்ணப்பிக்கப்பட்டது ✓", myApplications: "என் விண்ணப்பங்கள்",
+    registerBtn: "பதிவு செய்து பரிந்துரைகளைப் பெறுங்கள்", forgetBtn: "என்னை மறக்கவும்",
+    noRecs: "பரிந்துரைகள் கிடைக்கவில்லை", registering: "பதிவு செய்து பரிந்துரைகளை பெறுகிறோம்…",
+    loadingApps: "விண்ணப்பங்களை ஏற்றுகிறது…", err_name_required: "உங்கள் முழு பெயரை உள்ளிடவும்",
+    err_invalid_email: "சரியான மின்னஞ்சலை உள்ளிடவும் (example@domain.com)",
+    err_invalid_mobile: "செல்லுபடியாகும் மொபைல் எண்ணை உள்ளிடவும் (7–15 இலக்கங்கள் மட்டும்)",
+    err_invalid_cgpa: "எண் CGPA அல்லது சதவீதத்தை உள்ளிடவும் (எ.கா., 7.8 அல்லது 89%)",
+    err_invalid_year: "செல்லுபடியாகும் தேர்ச்சி ஆண்டை உள்ளிடவும்", err_invalid_dob: "பிறந்த தேதி எதிர்காலத்தில் இருக்க முடியாது",
+    sending: "அனுப்புகிறோம்…", apply_success: "விண்ணப்பம் பதிவு செய்யப்பட்டது", err_need_register: "விண்ணப்பிக்க முதலில் பதிவு செய்யவும்"
+  },
+  hi: {
+    apply: "आवेदन करें", applied: "लागू किया गया ✓", myApplications: "मेरे आवेदन",
+    registerBtn: "रजिस्टर करें और सिफारिशें प्राप्त करें", forgetBtn: "मुझे भूल जाओ",
+    noRecs: "कोई सिफारिशें नहीं मिलीं", registering: "रजिस्टर कर रहे हैं और सिफारिशें ला रहे हैं…",
+    loadingApps: "आवेदन लोड हो रहे हैं…", err_name_required: "कृपया अपना पूरा नाम दर्ज करें",
+    err_invalid_email: "कृपया मान्य ईमेल दर्ज करें (example@domain.com)",
+    err_invalid_mobile: "कृपया मान्य मोबाइल दर्ज करें — केवल अंक, 7–15 अंक",
+    err_invalid_cgpa: "संख्यात्मक CGPA या प्रतिशत दर्ज करें (जैसे 7.8 या 89%)",
+    err_invalid_year: "कृपया मान्य उत्तीर्ण वर्ष दर्ज करें", err_invalid_dob: "जन्मतिथि भविष्य की नहीं हो सकती",
+    sending: "भेजा जा रहा है…", apply_success: "आवेदन दर्ज किया गया", err_need_register: "आवेदन करने के लिए पहले पंजीकरण करें"
+  }
+};
+
+/* -----------------------
+   Language dropdown
+   ----------------------- */
+const LANGS = [
+  {code:'en', label:'English'},{code:'ta', label:'தமிழ்'},{code:'hi', label:'हिन्दी'},
+  {code:'te', label:'తెలుగు'},{code:'kn', label:'ಕನ್ನಡ'},{code:'ml', label:'മലയാളം'},
+  {code:'bn', label:'বাংলা'},{code:'mr', label:'मराठी'},{code:'gj', label:'ગુજરાતી'},
+  {code:'or', label:'ଓଡ଼ିଆ'},{code:'pa', label:'ਪੰਜਾਬੀ'}
+];
+const langSelect = document.getElementById('langSelect');
+LANGS.forEach(l=>{ const opt=document.createElement('option'); opt.value=l.code; opt.textContent=l.label; langSelect.appendChild(opt); });
+let currentLang = localStorage.getItem('pm_lang') || 'en'; if(!STR[currentLang]) currentLang='en'; langSelect.value=currentLang;
+langSelect.addEventListener('change', ()=>{ currentLang=langSelect.value||'en'; localStorage.setItem('pm_lang', currentLang); updateLocalizedText(); });
+
+/* -----------------------
+   Tabs
+   ----------------------- */
+const tabs = document.querySelectorAll('.tab-btn');
+const panels = { register: document.getElementById('panel-register'), recommend: document.getElementById('panel-recommend'), apps: document.getElementById('panel-apps') };
+function showTab(tabKey){ tabs.forEach(t=>t.classList.toggle('active', t.getAttribute('data-tab')===tabKey)); for(const k in panels) panels[k].style.display = (k===tabKey)?'':'none'; }
+tabs.forEach(t=>t.addEventListener('click', ()=>{ const tabKey=t.getAttribute('data-tab'); if(tabKey==='apps'){ const uid = window.latestUserId || localStorage.getItem('pm_user_id'); if(!uid){ alert("Please register (or enter your user id) first"); return; } loadApplicationsForUser(uid); } showTab(tabKey); }));
+showTab('register');
+
+/* -----------------------
+   Local state
+   ----------------------- */
+window.latestUserId = localStorage.getItem('pm_user_id') || null;
+let appliedSet = new Set(JSON.parse(localStorage.getItem('pm_applied') || "[]"));
+const statusAnnounce = document.getElementById('statusAnnounce');
+function announce(msg){ statusAnnounce.textContent = msg; }
+
+/* Update localized UI strings */
+function updateLocalizedText(){
+  const s = STR[currentLang] || STR.en;
+  document.getElementById('registerBtn').textContent = s.registerBtn || STR.en.registerBtn;
+  document.getElementById('forgetBtn').textContent = s.forgetBtn || STR.en.forgetBtn;
+  document.getElementById('tab-apps').textContent = s.myApplications || STR.en.myApplications;
+  document.querySelectorAll('.apply-btn').forEach(btn=>{ const applied = btn.dataset.applied === "true"; btn.textContent = applied ? (s.applied || STR.en.applied) : (s.apply || STR.en.apply); });
+}
+updateLocalizedText();
+
+/* -----------------------
+   DOB helper
+   ----------------------- */
+(function(){ const dobInput=document.getElementById('dob'), dobInfo=document.getElementById('dobInfo'); if(!dobInput||!dobInfo) return;
+  const today=new Date(), yyyy=today.getFullYear(), mm=String(today.getMonth()+1).padStart(2,'0'), dd=String(today.getDate()).padStart(2,'0');
+  const maxDate=`${yyyy}-${mm}-${dd}`; const minDate='1950-01-01';
+  dobInput.setAttribute('max', maxDate); dobInput.setAttribute('min', minDate);
+  function formatDateDisplay(iso){ if(!iso) return ""; const d=new Date(iso); if(isNaN(d)) return iso; return d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}); }
+  function computeAge(iso){ if(!iso) return null; const b=new Date(iso); if(isNaN(b)) return null; let age=today.getFullYear()-b.getFullYear(); const m=today.getMonth()-b.getMonth(); if(m<0||(m===0&&today.getDate()<b.getDate())) age--; return age; }
+  function showDobInfo(){ const val=dobInput.value; if(!val){ dobInfo.textContent=''; return; } const formatted=formatDateDisplay(val); const age=computeAge(val); dobInfo.textContent = formatted + (age!==null?` • ${age} yrs` : ''); }
+  showDobInfo(); dobInput.addEventListener('change', ()=>{ if(dobInput.value && dobInput.value>maxDate){ alert("Date of birth cannot be in the future."); dobInput.value=''; } showDobInfo(); }); dobInput.addEventListener('input', showDobInfo);
+  window.getDobForProfile = ()=> dobInput.value || null;
+})();
+
+/* -----------------------
+   Simple validation helpers
+   ----------------------- */
+function setFieldError(elem, msg){
+  if(!elem) return;
+  elem.classList.add('field-error');
+  let hint = elem.nextElementSibling;
+  if(!hint || !hint.classList || !hint.classList.contains('error-text')){ hint = document.createElement('div'); hint.className='error-text'; elem.parentNode.insertBefore(hint, elem.nextSibling); }
+  hint.textContent = msg || 'Invalid value';
+}
+function clearFieldError(elem){ if(!elem) return; elem.classList.remove('field-error'); let hint = elem.nextElementSibling; if(hint && hint.classList && hint.classList.contains('error-text')) hint.remove(); }
+function isValidEmail(v){ if(!v) return false; return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+function isDigitsOnly(v){ return /^[0-9]+$/.test(v); }
+function normalizeCgpaInput(v){ if(v==null) return null; const s=String(v).trim(); if(s==='') return null; if(s.endsWith('%')){ const n=parseFloat(s.slice(0,-1)); return isNaN(n)?null:n; } if(s.includes('/')){ const parts=s.split('/').map(x=>parseFloat(x.trim())); if(parts.length===2 && !isNaN(parts[0]) && !isNaN(parts[1]) && parts[1]!==0) return (parts[0]/parts[1])*100; } const n=parseFloat(s); return isNaN(n)?null:n; }
+
+function validateProfile(){
+  const announceEl=document.getElementById('statusAnnounce')||document.createElement('div');
+  let firstInvalid=null;
+  const name=document.getElementById('name'), email=document.getElementById('email'), mobile=document.getElementById('mobile'), cgpaEl=document.getElementById('cgpa'), yearEl=document.getElementById('year_of_passing'), dobEl=document.getElementById('dob');
+  [name,email,mobile,cgpaEl,yearEl,dobEl].forEach(el=>el&&clearFieldError(el));
+  if(!name.value||!name.value.trim()){ setFieldError(name, (STR[currentLang]?.err_name_required)||STR.en.err_name_required); firstInvalid=firstInvalid||name; }
+  if(email && email.value && email.value.trim()){ if(!isValidEmail(email.value.trim())){ setFieldError(email, (STR[currentLang]?.err_invalid_email)||STR.en.err_invalid_email); firstInvalid=firstInvalid||email; } }
+  if(mobile && mobile.value && mobile.value.trim()){ const v=mobile.value.trim(); const digits=v.replace(/\s|\-|\(|\)/g,''); if(!isDigitsOnly(digits)||digits.length<7||digits.length>15){ setFieldError(mobile,(STR[currentLang]?.err_invalid_mobile)||STR.en.err_invalid_mobile); firstInvalid=firstInvalid||mobile; } }
+  if(cgpaEl && cgpaEl.value && String(cgpaEl.value).trim()){ const val=normalizeCgpaInput(cgpaEl.value); if(val===null||!isFinite(val)){ setFieldError(cgpaEl,(STR[currentLang]?.err_invalid_cgpa)||STR.en.err_invalid_cgpa); firstInvalid=firstInvalid||cgpaEl; } }
+  if(yearEl && yearEl.value){ const y=parseInt(yearEl.value,10); const currentYear=new Date().getFullYear(); if(isNaN(y)||y<1950||y>currentYear+1){ setFieldError(yearEl,(STR[currentLang]?.err_invalid_year)||STR.en.err_invalid_year); firstInvalid=firstInvalid||yearEl; } }
+  if(dobEl && dobEl.value){ const todayIso=new Date().toISOString().slice(0,10); if(dobEl.value>todayIso){ setFieldError(dobEl,(STR[currentLang]?.err_invalid_dob)||STR.en.err_invalid_dob); firstInvalid=firstInvalid||dobEl; } }
+  if(firstInvalid){ try{ firstInvalid.focus(); }catch(e){} announceEl.textContent = (STR[currentLang]?.err_fix_fields) || "Please fix the highlighted fields"; return false; }
+  announceEl.textContent = ""; return true;
+}
+
+/* -----------------------
+   Toast & small utilities
+   ----------------------- */
+function showToast(msg, timeout=3000){ let t=document.getElementById('pm_toast'); if(!t){ t=document.createElement('div'); t.id='pm_toast'; document.body.appendChild(t);} t.textContent=msg; t.style.opacity='1'; clearTimeout(t._tm); t._tm=setTimeout(()=>{ t.style.opacity='0'; }, timeout); }
+
+/* -----------------------
+   Apply queue & retry (localStorage)
+   ----------------------- */
+function queueApply(payload){ const key='pm_apply_queue'; const q=JSON.parse(localStorage.getItem(key)||'[]'); q.push(Object.assign({attempted_at:new Date().toISOString()}, payload)); localStorage.setItem(key, JSON.stringify(q)); }
+async function processApplyQueue(){ const key='pm_apply_queue'; const q=JSON.parse(localStorage.getItem(key)||'[]'); if(!q||q.length===0) return; showToast(`Retrying ${q.length} queued application(s)...`,3000); const remaining=[]; for(const item of q){ try{ const resp=await fetch('/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:item.user_id,internship_id:item.internship_id})}); if(resp.ok){ markAppliedInUI(item.internship_id); } else { remaining.push(item); } } catch(err){ remaining.push(item); } } localStorage.setItem(key, JSON.stringify(remaining)); if(remaining.length===0) showToast('All queued applications processed',2500); else showToast(`${remaining.length} remain queued`,2500); }
+window.addEventListener('DOMContentLoaded', ()=>{ setTimeout(()=>{ processApplyQueue(); },1500); });
+
+/* -----------------------
+   Registration submit handler
+   ----------------------- */
+const profileForm = document.getElementById('profileForm');
+profileForm.addEventListener('submit', async (e)=>{ e.preventDefault();
+  if(!validateProfile()) return;
+  const data = {
+    name: document.getElementById('name').value.trim(),
+    gender: document.getElementById('gender').value,
+    dob: window.getDobForProfile ? window.getDobForProfile() : document.getElementById('dob').value,
+    father_name: document.getElementById('father_name').value,
+    mother_name: document.getElementById('mother_name').value,
+    category: document.getElementById('category').value,
+    pwd: Number(document.getElementById('pwd').value||0),
+    permanent_address: document.getElementById('permanent_address').value,
+    current_address: document.getElementById('current_address').value,
+    mobile: document.getElementById('mobile').value,
+    email: document.getElementById('email').value,
+    qualification: document.getElementById('qualification').value,
+    course: document.getElementById('course').value,
+    specialization: document.getElementById('specialization').value,
+    university: document.getElementById('university').value,
+    year_of_passing: Number(document.getElementById('year_of_passing').value) || null,
+    cgpa: document.getElementById('cgpa').value || null,
+    skills: document.getElementById('skills').value,
+    languages: document.getElementById('languages').value,
+    interests: document.getElementById('interests').value,
+    past_experience: document.getElementById('past_experience').value,
+    certifications: document.getElementById('certifications').value,
+    hobbies: document.getElementById('hobbies').value
+  };
+
+  document.getElementById('out').innerHTML = `<div class="card">${STR[currentLang].registering}</div>`;
+  announce(STR[currentLang].registering);
+
+  try {
+    const res1 = await fetch('/add_user',{method:'POST',headers:{'Content-Type':'application/json'},body: JSON.stringify(data)});
+    if(!res1.ok){ const txt = await res1.text(); document.getElementById('out').innerHTML = `<div class="card">Error: ${txt}</div>`; return; }
+    const created = await res1.json();
+    const user_id = created.user_id;
+    window.latestUserId = user_id; localStorage.setItem('pm_user_id', user_id);
+    const enteredInterests = document.getElementById('interests').value || ''; if(enteredInterests) localStorage.setItem('pm_user_interests', enteredInterests);
+
+    // fetch recommendations (POST endpoint expected)
+    const recRes = await fetch('/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body: JSON.stringify({user_id, n:5, min_score:30, debug:false})});
+    if(!recRes.ok){ const txt=await recRes.text(); document.getElementById('out').innerHTML=`<div class="card">Error fetching recommendations: ${txt}</div>`; return; }
+    const recs = await recRes.json();
+    window.latestRecommendations = recs;
+    showTab('recommend'); renderRecommendations(recs); announce("Recommendations shown");
+  } catch(err){
+    document.getElementById('out').innerHTML = `<div class="card">Network error: ${err.message}</div>`;
+  }
+});
+document.getElementById('clearProfile').addEventListener('click', ()=> profileForm.reset());
+document.getElementById('forgetBtn').addEventListener('click', ()=>{ localStorage.removeItem('pm_user_id'); localStorage.removeItem('pm_user_interests'); localStorage.removeItem('pm_applied'); appliedSet=new Set(); window.latestUserId=null; alert("Local data cleared"); });
+
+/* -----------------------
+   Render recommendations with robust apply wiring
+   ----------------------- */
+function scoreBadge(score){ if(score>=70) return {text:"Strong Match",cls:"strong"}; if(score>=50) return {text:"Medium Match",cls:"medium"}; return {text:"Weak Match",cls:"weak"}; }
+
+function markAppliedInUI(iid){
+  appliedSet.add(Number(iid)); localStorage.setItem('pm_applied', JSON.stringify(Array.from(appliedSet)));
+  document.querySelectorAll('.apply-btn').forEach(btn=>{ try{ if(String(btn.dataset.iid)===String(iid)){ btn.disabled=true; btn.dataset.applied="true"; btn.textContent=(STR[currentLang]?.applied)||STR.en.applied; } }catch(e){} });
+  document.querySelectorAll('.card').forEach(card=>{ try{ if(card.dataset && String(card.dataset.iid)===String(iid)){ if(!card.querySelector('.applied-ribbon')){ const r=document.createElement('div'); r.className='applied-ribbon'; r.textContent=(STR[currentLang]?.applied)||STR.en.applied; card.style.position='relative'; card.appendChild(r); } } }catch(e){} });
+}
+
+function renderRecommendations(recs){
+  const out=document.getElementById('out'); out.innerHTML='';
+  if(!Array.isArray(recs)||recs.length===0){ out.innerHTML=`<div class="card">${STR[currentLang].noRecs}</div>`; return; }
+  recs.forEach(item=>{
+    const iid = item.internship_id || item.id;
+    const card=document.createElement('div'); card.className='card'; card.dataset.iid = iid;
+    const title=document.createElement('div'); title.className='title'; title.textContent = item.title || item["Internship Title"] || item.company_name; card.appendChild(title);
+    const company=document.createElement('div'); company.className='meta'; company.textContent = "Company: " + (item.company_name || item.Company || ''); card.appendChild(company);
+    const loc=document.createElement('div'); loc.className='meta'; loc.textContent = "Location: " + (item.location || item.Location || ''); card.appendChild(loc);
+    const score = item.score || item.Score || (item.score_breakdown && item.score_breakdown.total) || 0;
+    const badgeInfo = scoreBadge(Number(score));
+    const badge=document.createElement('span'); badge.className='badge ' + badgeInfo.cls; badge.textContent = badgeInfo.text + " (" + (score||'-') + ")"; card.appendChild(badge);
+
+    if(item["Matched Skills"]){ const s=document.createElement('div'); s.className='meta'; s.textContent = "Matched skills: " + item["Matched Skills"]; card.appendChild(s); }
+    if(item["Matched Languages"]){ const l=document.createElement('div'); l.className='meta'; l.textContent = "Matched languages: " + item["Matched Languages"]; card.appendChild(l); }
+    if(item["Why"]){ const why=document.createElement('div'); why.className='why'; why.textContent = "Why: " + item["Why"]; card.appendChild(why); }
+
+    const applyRow=document.createElement('div'); applyRow.className='apply-row';
+    const applyBtn=document.createElement('button'); applyBtn.className='apply-btn'; applyBtn.dataset.iid = iid; applyBtn.dataset.applied="false"; applyBtn.textContent = (STR[currentLang]?.apply)||STR.en.apply;
+    if(appliedSet.has(Number(iid))){ applyBtn.textContent = (STR[currentLang]?.applied)||STR.en.applied; applyBtn.disabled=true; applyBtn.dataset.applied="true"; }
+    applyBtn.addEventListener('click', ()=> robustApplyHandler(iid, applyBtn));
+    applyRow.appendChild(applyBtn);
+    card.appendChild(applyRow);
+    out.appendChild(card);
+  });
+  updateLocalizedText();
+}
+
+/* robust apply handler using server + queue fallback */
+async function robustApplyHandler(iid, applyBtn){
+  if(applyBtn.disabled) return;
+  applyBtn.disabled=true; const origText = applyBtn.textContent; applyBtn.textContent = (STR[currentLang]?.sending) || STR.en.sending;
+  let uid = window.latestUserId || localStorage.getItem('pm_user_id');
+  if(!uid){ uid = prompt("Enter your user id (or please register first):"); if(!uid){ showToast((STR[currentLang]?.err_need_register)||STR.en.err_need_register,3000); applyBtn.disabled=false; applyBtn.textContent=origText; return; }}
+  const payload = { user_id: Number(uid), internship_id: Number(iid) };
+  try{
+    const resp = await fetch('/apply', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if(resp.ok){ const j = await resp.json(); markAppliedInUI(iid); showToast((STR[currentLang]?.apply_success)||STR.en.apply_success,2500); }
+    else {
+      const txt = await resp.text();
+      if(resp.status>=400 && resp.status<500){ alert("Apply failed: " + txt); applyBtn.disabled=false; applyBtn.textContent=origText; }
+      else { queueApply(payload); applyBtn.disabled=true; applyBtn.textContent=(STR[currentLang]?.applied)||STR.en.applied; showToast("Network error — application queued and will retry",4000); }
+    }
+  }catch(err){ queueApply(payload); applyBtn.disabled=true; applyBtn.textContent=(STR[currentLang]?.applied)||STR.en.applied; showToast("Offline — application queued",4000); }
+}
+
+/* -----------------------
+   My Applications loader + Withdraw
+   ----------------------- */
+async function loadApplicationsForUser(userId){
+  const appsOut=document.getElementById('appsOut'); appsOut.innerHTML = `<div class="card">${STR[currentLang].loadingApps}</div>`;
+  try{
+    const res = await fetch('/applications/' + userId);
+    if(!res.ok){ const txt=await res.text(); appsOut.innerHTML=`<div class="card">Error: ${txt}</div>`; return; }
+    const rows = await res.json();
+    if(!Array.isArray(rows) || rows.length===0){ appsOut.innerHTML = `<div class="card">No applications found</div>`; return; }
+    appsOut.innerHTML = "";
+    rows.forEach(r=>{
+      const c = document.createElement('div'); c.className='card';
+      const t = document.createElement('div'); t.className='title'; t.textContent = (r.internship && (r.internship.title || r.internship.company_name)) || ("Internship " + r.internship_id);
+      c.appendChild(t);
+      const meta = document.createElement('div'); meta.className='meta'; meta.textContent = `${r.internship.company_name || ''} • ${r.internship.location || ''} • Applied at ${new Date(r.applied_at).toLocaleString()}`;
+      c.appendChild(meta);
+      const why = document.createElement('div'); why.className='why'; why.textContent = "Status: " + (r.status || "applied") + (r.why_text ? (" • " + r.why_text) : "");
+      c.appendChild(why);
+
+      // withdraw button if status not withdrawn
+      if((r.status||'applied') !== 'withdrawn'){
+        const withdrawBtn = document.createElement('button'); withdrawBtn.className='btn btn-secondary'; withdrawBtn.style.marginTop='8px'; withdrawBtn.textContent='Withdraw';
+        withdrawBtn.onclick = ()=> withdrawApplication(r.internship_id, withdrawBtn);
+        c.appendChild(withdrawBtn);
+      }
+      appsOut.appendChild(c);
+    });
+    showTab('apps');
+  }catch(err){ appsOut.innerHTML = `<div class="card">Network error: ${err.message}</div>`; }
+}
+
+/* withdraw helper */
+async function withdrawApplication(iid, btnEl){
+  if(!confirm("Withdraw application?")) return;
+  let uid = window.latestUserId || localStorage.getItem('pm_user_id'); if(!uid){ alert("No user id"); return; }
+  try{
+    const resp = await fetch('/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body: JSON.stringify({user_id:Number(uid),internship_id:Number(iid)})});
+    if(resp.ok){ const j = await resp.json(); showToast("Application withdrawn",2500); btnEl.disabled=true; btnEl.textContent='Withdrawn'; markAppliedInUI(iid); }
+    else { const txt=await resp.text(); alert("Withdraw failed: " + txt); }
+  }catch(e){ alert("Network error: " + e.message); }
+}
+
+/* -----------------------
+   Prefill & small helpers
+   ----------------------- */
+window.addEventListener('DOMContentLoaded', ()=>{
+  const savedInterests = localStorage.getItem('pm_user_interests') || '';
+  if(savedInterests && document.getElementById('interests')) document.getElementById('interests').value = savedInterests;
+  const uid = window.latestUserId || localStorage.getItem('pm_user_id');
+  if(uid){ /* optional auto-fetch recommendations: fetchRecommendations(uid) */ }
+});
+
+/* optional helper to fetch recommendations by user id (POST) */
+async function fetchRecommendations(user_id){
+  try{
+    const res = await fetch('/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body: JSON.stringify({user_id, n:5, min_score:30, debug:false})});
+    if(res.ok){ const recs = await res.json(); window.latestRecommendations = recs; showTab('recommend'); renderRecommendations(recs); } else console.warn("Failed to fetch recommendations");
+  }catch(e){ console.warn("Network error fetching recs", e); }
+}
+</script>
+</body>
+</html>

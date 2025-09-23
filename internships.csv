@@ -1,0 +1,4 @@
+internship_id,company_name,title,location,required_qualification,required_skills,required_languages,sector,category_preference,pwd_friendly,description,created_at
+1,XYZ Corp,Software Intern,Coimbatore,Graduation,"C, Python",English,,OBC,1,,
+2,ABC Tech,Web Developer Intern,Chennai,Diploma,"Java, HTML, CSS","English, Tamil",,SC,1,,
+3,DataWorks,Data Analyst Intern,Bangalore,Graduation,"SQL, Python",English,,General,,,

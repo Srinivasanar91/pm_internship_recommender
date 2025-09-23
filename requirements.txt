@@ -1,0 +1,10 @@
+Flask>=2.2
+Flask-SQLAlchemy
+scikit-learn
+scipy
+joblib
+gunicorn
+pandas
+scikit-learn
+pytest
+pytest-cov
