@@ -1,5 +1,4 @@
-﻿$yaml = @'
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -12,8 +11,12 @@ jobs:
       matrix:
         python-version: [3.11, 3.12]
 
+    env:
+      ADMIN_TOKEN: ${{ secrets.123456 }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
@@ -21,7 +24,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install system deps (for scipy / sklearn)
-        run: sudo apt-get update && sudo apt-get install -y libatlas-base-dev gfortran
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libatlas-base-dev gfortran
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -34,7 +39,7 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
 
       - name: Run tests (pytest + junit)
@@ -42,8 +47,8 @@ jobs:
           pytest -q --maxfail=1 --junitxml=report.xml
 
       - name: Upload test report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pytest-report
           path: report.xml
-'@
