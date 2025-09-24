@@ -12,7 +12,7 @@ jobs:
         python-version: [3.11, 3.12]
 
     env:
-      ADMIN_TOKEN: ${{ secrets.123456 }}
+      ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
 
     steps:
       - name: Checkout repository
