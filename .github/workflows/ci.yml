@@ -12,6 +12,7 @@ jobs:
         python-version: [3.11, 3.12]
 
     env:
+      PYTHONPATH: ${{ github.workspace }}
       ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
 
     steps:
